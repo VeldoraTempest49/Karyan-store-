@@ -1,0 +1,76 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sharma Karyana Store</title>
+  <style>
+    :root{--primary:#2e7d6b;--accent:#f6a623;--bg:#f7faf9;--text:#222;--white:#fff}
+    *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
+    body{background:var(--bg);color:var(--text)}
+    header{background:linear-gradient(rgba(0,0,0,.45),rgba(0,0,0,.45)),url('https://i.ibb.co/KxFbc2RZ/Screenshot-2026-04-23-13-09-16-52-99c04817c0de5652397fc8b56c3b3817.jpg') center/cover;padding:60px 20px;color:#fff;text-align:center}
+    header h1{font-size:2rem} header p{margin-top:8px}
+    .filters{display:flex;gap:8px;overflow:auto;padding:14px}
+    .filters button{border:none;padding:10px 16px;border-radius:20px;background:#ddd;cursor:pointer;white-space:nowrap}
+    .filters button.active{background:var(--primary);color:#fff}
+    .products{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;padding:16px}
+    .card{background:#fff;border-radius:18px;padding:12px;box-shadow:0 4px 16px rgba(0,0,0,.08);display:flex;flex-direction:column}
+    .card img{width:100%;height:150px;object-fit:cover;border-radius:12px}
+    .card h3{font-size:1rem;margin:8px 0 4px}.price{color:var(--primary);font-weight:bold}.desc{font-size:.85rem;color:#666;margin:6px 0}
+    .card button,.checkout-btn{background:var(--primary);color:#fff;border:none;padding:10px;border-radius:10px;cursor:pointer;margin-top:auto}
+    .cart-btn,.wa-btn{position:fixed;right:18px;border-radius:50%;width:58px;height:58px;border:none;color:#fff;cursor:pointer;font-size:22px;box-shadow:0 8px 20px rgba(0,0,0,.2)}
+    .cart-btn{bottom:90px;background:var(--accent)} .wa-btn{bottom:18px;background:#25D366;text-decoration:none;display:flex;align-items:center;justify-content:center}
+    .badge{position:absolute;top:-5px;right:-5px;background:red;color:#fff;border-radius:50%;font-size:12px;padding:4px 7px}
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:14px}
+    .modal-content{background:#fff;width:100%;max-width:520px;max-height:90vh;overflow:auto;border-radius:18px;padding:18px}
+    .cart-item{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid #eee}
+    .qty button{padding:4px 10px;border:none;background:#eee;border-radius:6px}
+    form input,form textarea{width:100%;padding:12px;margin:8px 0;border:1px solid #ccc;border-radius:10px}
+    .hidden{display:none}.close{float:right;cursor:pointer;font-size:24px}
+  </style>
+</head>
+<body>
+<header><h1>SHARMA KARYANA STORE</h1><p>Fresh groceries delivered to your door</p></header>
+<div class="filters" id="filters"></div>
+<div class="products" id="products"></div>
+<button class="cart-btn" onclick="openCart()">🛒<span class="badge" id="cartCount">0</span></button>
+<a class="wa-btn" href="https://wa.me/919999999999" target="_blank">💬</a><div class="modal" id="cartModal"><div class="modal-content">
+<span class="close" onclick="closeCart()">&times;</span>
+<h2>Your Cart</h2><div id="cartItems"></div><h3 id="total"></h3>
+<button class="checkout-btn" onclick="showCheckout()">Place Order</button>
+<div id="checkoutForm" class="hidden">
+<form id="orderForm" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+<input required name="name" placeholder="Customer Name">
+<input required name="phone" placeholder="Phone Number">
+<textarea required name="address" placeholder="Delivery Address"></textarea>
+<textarea name="notes" placeholder="Special Instructions"></textarea>
+<input type="hidden" name="order_summary" id="orderSummary">
+<button class="checkout-btn" type="submit">Submit Order</button>
+</form></div>
+</div></div><script>
+const products=[
+{name:'Relaxing Mask',price:299,cat:'Relaxing',img:'https://i.ibb.co/B59k3bNp',desc:'Made From 100% Mulberry Silk'},
+{name:'Aloe Vera Gel (325g)',price:3499,cat:'Gel',img:'https://i.ibb.co/s9StCzHY',desc:'Made From 100% Pure Aloe Vera'},
+{name:'Cetaphil Gentle Skin Cleanser',price:379,cat:'Cleanser',img:'https://i.ibb.co/ksCvbWJD',desc:'Dermatologist Recommended'},
+{name:'Ethiglo Face Wash (70g)',price:249,cat:'Face Wash',img:'https://i.ibb.co/RVsSy99',desc:'Reveal Brighter, Clear Skin'},
+{name:'Towino Gel Mask',price:199,cat:'Gel Mask',img:'https://i.ibb.co/C3zkWHfZ',desc:'Suitable For All Family Members'},
+{name:'Bistfy Portable Neck Fan',price:799,cat:'Portable Neck Fan',img:'https://i.ibb.co/PzPZYbr2',desc:'Hands-Free Cooling'},
+{name:'Chemist At Play (100ml)',price:199,cat:'Cream',img:'https://i.ibb.co/BHYQq4CK',desc:'Control Excess Oil'},
+{name:'Pexpo Thermos (500ml)',price:669,cat:'Thermos',img:'https://i.ibb.co/K8gW7VV',desc:'Health On The Go'},
+{name:'Garnier UV Serum (45g)',price:179,cat:'UV Serum',img:'https://i.ibb.co/Wp2BdrYf',desc:'Boost Your Glow With Vitamin C'},
+{name:'Kama Ayurveda (100ml)',price:999,cat:'Oil',img:'https://i.ibb.co/pBLkLQpr',desc:'100% Natural'}];
+let cart=JSON.parse(localStorage.getItem('cart')||'[]');
+const cats=['All',...new Set(products.map(p=>p.cat))];
+function renderFilters(){filters.innerHTML=cats.map((c,i)=>`<button class='${i===0?'active':''}' onclick="filterProducts('${c}',this)">${c}</button>`).join('')}
+function renderProducts(list=products){productsEl.innerHTML=list.map((p,i)=>`<div class='card'><img loading='lazy' src='${p.img}' alt='${p.name}'><h3>${p.name}</h3><div class='price'>₹${p.price}</div><div class='desc'>${p.desc}</div><button onclick='addToCart(${i})'>Add to Cart</button></div>`).join('')}
+function filterProducts(cat,btn){document.querySelectorAll('.filters button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderProducts(cat==='All'?products:products.filter(p=>p.cat===cat))}
+function addToCart(i){const p=products[i],item=cart.find(x=>x.name===p.name);item?item.qty++:cart.push({...p,qty:1});saveCart()}
+function saveCart(){localStorage.setItem('cart',JSON.stringify(cart));updateCartCount();renderCart()}
+function updateCartCount(){cartCount.textContent=cart.reduce((a,b)=>a+b.qty,0)}
+function renderCart(){cartItems.innerHTML='';let total=0;cart.forEach((item,i)=>{const sub=item.qty*item.price;total+=sub;cartItems.innerHTML+=`<div class='cart-item'><div>${item.name}<br>₹${item.price} × ${item.qty} = ₹${sub}</div><div class='qty'><button onclick='changeQty(${i},-1)'>-</button> <button onclick='changeQty(${i},1)'>+</button></div></div>`});document.getElementById('total').textContent='Grand Total: ₹'+total}
+function changeQty(i,d){cart[i].qty+=d;if(cart[i].qty<1)cart.splice(i,1);saveCart()}
+function openCart(){cartModal.style.display='flex'} function closeCart(){cartModal.style.display='none'}
+function showCheckout(){document.getElementById('checkoutForm').classList.remove('hidden');document.getElementById('orderSummary').value=cart.map(i=>`${i.name} x${i.qty} = ₹${i.qty*i.price}`).join('\n')+`\nTotal: ₹${cart.reduce((a,b)=>a+b.qty*b.price,0)}`}
+orderForm.addEventListener('submit',()=>{localStorage.removeItem('cart');cart=[];setTimeout(()=>alert('Order placed! SHARMA KARYANA STORE will contact you on WhatsApp to confirm.'),300)})
+const productsEl=document.getElementById('products'),filters=document.getElementById('filters');renderFilters();renderProducts();updateCartCount();renderCart();
+</script></body>
+</html>
